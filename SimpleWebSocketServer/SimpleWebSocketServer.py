@@ -50,7 +50,7 @@ HANDSHAKE_STR = (
    "HTTP/1.1 101 Switching Protocols\r\n"
    "Upgrade: WebSocket\r\n"
    "Connection: Upgrade\r\n"
-   "Sec-WebSocket-Accept: %(acceptstr)s\r\n\r\n"
+   "Sec-WebSocket-Accept: %(acceptstr)s\r\n"
 )
 
 GUID_STR = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
@@ -74,7 +74,7 @@ MAXPAYLOAD = 33554432
 
 class WebSocket(object):
 
-   def __init__(self, server, sock, address):
+   def __init__(self, server, sock, address):      
       self.server = server
       self.client = sock
       self.address = address
@@ -260,9 +260,15 @@ class WebSocket(object):
                # handshake rfc 6455
                try:
                   key = self.request.headers['Sec-WebSocket-Key']
+
                   k = key.encode('ascii') + GUID_STR.encode('ascii')
                   k_s = base64.b64encode(hashlib.sha1(k).digest()).decode('ascii')
                   hStr = HANDSHAKE_STR % {'acceptstr': k_s}
+                  if 'Sec-WebSocket-Protocol' in self.request.headers:
+                      protocol = self.request.headers['Sec-WebSocket-Protocol']
+                      hStr += "Sec-WebSocket-Protocol: %(protocol)s\r\n" % {'protocol':protocol}
+
+                  hStr += '\r\n'
                   self.sendq.append((BINARY, hStr.encode('ascii')))
                   self.handshaked = True
                   self.handleConnected()
